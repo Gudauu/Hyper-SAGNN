@@ -1,7 +1,7 @@
 import os
 import time
 import numpy as np
-import easygraph as eg
+import networkx as nx
 import random
 from tqdm import tqdm
 import torch
@@ -12,19 +12,19 @@ device_ids = [0, 1]
 
 
 class Graph():
-    def __init__(self, eg_G, p, q, is_directed=False):
-        self.G = eg_G
+    def __init__(self, nx_G, p, q, is_directed=False):
+        self.G = nx_G
         self.is_directed = is_directed
         self.p = p
         self.q = q
         self.neighbors = []
         print("initialization")
-        for i in range(len(eg_G.nodes)
-                       ):  # actualy eg_G.nodes is already increasing order
-            self.neighbors.append(sorted(list(eg_G.neighbors(i))))
-        self.degree = np.zeros((len(eg_G.nodes)))
-        for i in range(len(eg_G.nodes)):
-            self.degree[i] = np.sum([eg_G[i][nbr]['weight']
+        for i in range(len(nx_G.nodes())
+                       ):  # actualy nx_G.nodes() is already increasing order
+            self.neighbors.append(sorted(nx_G.neighbors(i)))
+        self.degree = np.zeros((len(nx_G.nodes())))
+        for i in range(len(nx_G.nodes())):
+            self.degree[i] = np.sum([nx_G[i][nbr]['weight']
                                      for nbr in self.neighbors[i]])
         print(self.degree)
 
@@ -81,7 +81,7 @@ def preprocess_transition_probs(sg):
 
     print("transition probs: ")
     alias_nodes = {}
-    for node in tqdm(G.nodes):
+    for node in tqdm(G.nodes()):
         unnormalized_probs = [
             G[node][nbr]['weight'] /
             np.sqrt(
@@ -96,7 +96,7 @@ def preprocess_transition_probs(sg):
 
     # Parallel alias edges
     print("alias edges: ")
-    edges = G.edges
+    edges = G.edges()
 
     threads_num = 100
     pool = ProcessPoolExecutor(max_workers=threads_num)
@@ -203,7 +203,7 @@ def simulate_walks(sG, num_walks, walk_length):
     '''
     print("sample walks:")
     walks = []
-    nodes = sG.G.nodes
+    nodes = sG.G.nodes()
     for node in tqdm(nodes):
         for walk_iter in range(num_walks):
             temp = node2vec_walk(sG, walk_length, node)
@@ -218,21 +218,21 @@ def read_graph(num, hyperedge_list):
     '''
     Transfer the hyperedge to pairwise edge & Reads the input network in networkx.
     '''
-    G = eg.Graph()
+    G = nx.Graph()
     tot = sum(num)
-    G.add_nodes(range(tot))
+    G.add_nodes_from(range(tot))
     for ee in tqdm(hyperedge_list):
         e = ee
         edges_to_add = []
         for i in range(len(e)):
             for j in range(i + 1, len(e)):
                 edges_to_add.append((e[i], e[j]))
-        G.add_edges(edges_to_add)
+        G.add_edges_from(edges_to_add)
         for i in range(len(e)):
             for j in range(i + 1, len(e)):
                 add_weight(G, e[i], e[j])
 
-    # G = G.to_undirected()    # Shutong: no such method. Maybe eg Graph are undirected from the start
+    G = G.to_undirected()
 
     return G
 
@@ -263,8 +263,8 @@ def random_walk(args, num, hyperedge_list):
     if not args.TRY and os.path.exists(walks_save_path):
         return walks_save_path
     else:
-        eg_G = read_graph(num.numpy(), hyperedge_list)
-        G = Graph(eg_G, p, q)
+        nx_G = read_graph(num.numpy(), hyperedge_list)
+        G = Graph(nx_G, p, q)
         preprocess_transition_probs(G)
         walks = simulate_walks(G, num_walks, walk_length)
         walks = np.array(walks)

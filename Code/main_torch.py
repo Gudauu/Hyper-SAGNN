@@ -542,6 +542,8 @@ def get_adjacency(data, norm=True):
     
     return csr_matrix(A).astype('float32')
 
+
+
 args = parse_args()
 neg_num = 5
 batch_size = 96

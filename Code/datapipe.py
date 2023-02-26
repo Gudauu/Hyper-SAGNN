@@ -1,46 +1,11 @@
-# Copyright 2015 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
-"""Multi-threaded word2vec mini-batched skip-gram model.
-
-Trains the model described in:
-(Mikolov, et. al.) Efficient Estimation of Word Representations in Vector Space
-ICLR 2013.
-http://arxiv.org/abs/1301.3781
-This model does traditional minibatching.
-
-The key ops used are:
-* placeholder for feeding in tensors for each example.
-* embedding_lookup for fetching rows from the embedding matrix.
-* sigmoid_cross_entropy_with_logits to calculate the loss.
-* GradientDescentOptimizer for optimizing the loss.
-* skipgram custom op that does input processing.
-"""
-
-import torch
 import os
-import tensorflow as tf
 import warnings
+import torch
+import torch.nn.functional as F
 
-word2vec = tf.load_op_library(
-    os.path.join(
-        os.path.dirname(
-            os.path.realpath(__file__)),
-        'word2vec_ops.so'))
+# Load PyTorch custom op library
+word2vec = torch.ops.load_library(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'word2vec_ops.so'))
 warnings.filterwarnings("ignore")
-
 
 class Word2Vec_Skipgram_Data(object):
     """Word2Vec model (Skipgram)."""
@@ -53,14 +18,14 @@ class Word2Vec_Skipgram_Data(object):
             window_size,
             min_count,
             subsample,
-            session):
+            device):
         self.train_data = train_data
         self.num_samples = num_samples
         self.batch_size = batch_size
         self.window_size = window_size
         self.min_count = min_count
         self.subsample = subsample
-        self._session = session
+        self.device = device
         self._word2id = {}
         self._id2word = []
         self.build_graph()
@@ -74,14 +39,18 @@ class Word2Vec_Skipgram_Data(object):
                                               window_size=self.window_size,
                                               min_count=self.min_count,
                                               subsample=self.subsample)
+
         (self.vocab_words, self.vocab_counts,
-         self.words_per_epoch) = self._session.run([words, counts, words_per_epoch])
+         self.words_per_epoch) = (words.cpu().numpy().tolist(),
+                                  counts.cpu().numpy().tolist(),
+                                  words_per_epoch.item())
+
         self.vocab_size = len(self.vocab_words)
         print("Data file: ", self.train_data)
         print("Vocab size: ", self.vocab_size - 1, " + UNK")
         print("Words per epoch: ", self.words_per_epoch)
-        self._examples = examples
-        self._labels = labels
+        self._examples = examples.to(self.device)
+        self._labels = labels.to(self.device)
         self._id2word = self.vocab_words
         for i, w in enumerate(self._id2word):
             self._word2id[w] = i
@@ -96,40 +65,26 @@ class Word2Vec_Skipgram_Data(object):
         self._id2word = id2word
 
         # Nodes to compute the nce loss w/ candidate sampling.
-        labels_matrix = tf.reshape(
-            tf.cast(labels,
-                    dtype=tf.int64),
-            [self.batch_size, 1])
+        labels_matrix = self._labels.view(self.batch_size, 1)
+
         # Negative sampling.
-        self.sampled_ids, _, _ = (tf.nn.fixed_unigram_candidate_sampler(
+        self.sampled_ids, _, _ = (torch.ops.torch_word2vec_ops.fixed_unigram_candidate_sampler(
             true_classes=labels_matrix,
             num_true=1,
             num_sampled=self.num_samples,
             unique=True,
             range_max=self.vocab_size,
             distortion=0.75,
-            unigrams=self.vocab_counts.tolist()))
+            unigrams=torch.tensor(self.vocab_counts, dtype=torch.float32).to(self.device)))
 
     def next_batch(self):
         """Train the model."""
 
-        initial_epoch, e, l, s, words = self._session.run(
-            [self._epoch, self._examples, self._labels, self.sampled_ids, self._words])
+        initial_epoch, e, l, s, words = (self._epoch.item(),
+                                         self._examples.cpu().numpy().tolist(),
+                                         self._labels.cpu().numpy().tolist(),
+                                         self.sampled_ids.cpu().numpy().tolist(),
+                                         self._words)
 
         # All + 1 because of the padding_idx
         e_new = []
-        for e1 in e:
-            e_new.append(self._id2word[e1] + 1)
-
-        label_new = []
-        for l1 in l:
-            label_new.append(self._id2word[l1] + 1)
-
-        sampled_id_new = []
-        for s1 in s:
-            sampled_id_new.append(self._id2word[s1] + 1)
-
-        return e_new, label_new, sampled_id_new, initial_epoch, words
-
-
-
