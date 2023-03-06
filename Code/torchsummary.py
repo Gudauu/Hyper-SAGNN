@@ -4,6 +4,33 @@ from torch.autograd import Variable
 
 from collections import OrderedDict
 import numpy as np
+### Shutong: I think this file is used for formatted report of modeling results
+ 
+### Shutong: below comments are from chatGPT
+
+# This is a Python script that defines a function called summary that can be used 
+# to print a summary of a PyTorch model's layers, output shapes, and number of trainable parameters.
+
+
+# The summary includes the input size, output size, and number of parameters for each layer in the model.
+
+# The summary function takes three arguments: model, input_size, and batch_size. 
+# The model argument is the PyTorch model for which you want to print a summary. 
+# The input_size argument is the size of the input to the model, which can be a single tuple or a list of tuples. 
+# The batch_size argument is the size of the batch used for the forward pass, and is set to -1 by default.
+
+# The summary function first creates a list of input tensors of the specified size and type (CPU or GPU). 
+# Then, it applies a register_hook function to each layer of the model using the model.apply method. The register_hook function registers a forward hook on each layer of the model, which is a function that is called every time the layer is run during the forward pass. The forward hook function hook saves information about the layer, such as its input and output shapes and the number of trainable parameters.
+
+# After applying the register_hook function to each layer of the model, 
+# the summary function makes a forward pass through the model using the input tensors. 
+# This causes the forward hook functions to be called for each layer, 
+# which populates the summary dictionary with information about each layer.
+
+# Finally, the summary function prints a summary of the model using the information in the summary dictionary. 
+# The output includes the layer name, output shape, and number of parameters. 
+# It also calculates and prints the total number of parameters and the size of the input, output, 
+# and parameters in megabytes (MB).
 
 
 def summary(model, input_size, batch_size=-1, device="cuda"):

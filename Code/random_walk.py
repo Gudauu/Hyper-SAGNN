@@ -10,6 +10,17 @@ from concurrent.futures import as_completed, ProcessPoolExecutor
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_ids = [0, 1]
 
+## Shutong: if my understanding is correct, random_walk is used to generate features.
+## this file is copied from "Code/useless/random_walk_nx.py" and substituted nx with eg (might needs checking, cuz some attributes might still contain conflicts)
+
+### Shutong: below comments are from chatGPT
+# Graph: A class representing a graph. It takes an easygraph object, eg_G, and two parameters p and q as input, and computes transition probabilities for random walks on the graph.
+# get_alias_edge: Given two nodes src and dst, returns the alias edge setup lists for a given edge.
+# alias_some_edges: Given a list of edges, returns a dictionary of alias edge setup lists for each edge.
+# preprocess_transition_probs: Preprocessing of transition probabilities for guiding the random walks.
+# alias_setup: Computes utility lists for non-uniform sampling from discrete distributions.
+# alias_draw: Draws a sample from a non-uniform discrete distribution using alias sampling.
+# add_weight: Adds a weight attribute to an edge in a graph, if it does not already exist.
 
 class Graph():
     def __init__(self, eg_G, p, q, is_directed=False):

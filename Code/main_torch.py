@@ -26,6 +26,54 @@ torch.backends.cudnn.deterministic = False
 
 warnings.filterwarnings("ignore")
 
+### Shutong: below comments are from chatGPT
+# This script defines a set of functions that are used to train node2vec models for graph embedding.
+
+# The parse_args function parses command-line arguments for the node2vec algorithm. 
+# The arguments include the name of the dataset, the dimensionality of the embedding vectors, 
+# the length of random walks used to generate training data, and various hyperparameters used in the training process.
+
+# The train_batch_hyperedge function is used to train node2vec models using hyperedges. 
+# It takes as input a node2vec model, a loss function, a batch of hyperedges, 
+# the weights of the hyperedges, the type of hyperedges, and the true labels (y). 
+# It returns the predicted labels, true labels, loss value, and reconstruction loss value.
+
+# The train_batch_skipgram function is used to train node2vec models using skip-gram. 
+# It takes as input a node2vec model, a loss function, a weight parameter alpha, and a batch of skip-gram data. 
+# It returns the cross-entropy loss value.
+
+# Other functions imported in this script include pad_sequence and summary from torch.nn.utils.rnn and torchsummary, respectively, 
+# and various functions from the random_walk, random_walk_hyper, Modules, and utils modules. 
+# The script also sets up multiprocessing for parallelism, sets the device to CUDA if available, 
+# and sets some warning messages to be ignored.
+
+# generate_negative() generates negative samples for a given graph. 
+# The input arguments include x, which is a tensor of the graph structure, dict1, 
+# which is the dictionary that contains the positive samples, get_type, 
+# which indicates the type of negative samples to generate, weight, 
+# which is the weight vector of the nodes, 
+# and forward, which indicates the direction of sampling. 
+# The function first determines whether the input dict1 is the training or testing set and sets it accordingly. 
+# If the weight vector is not provided, the function initializes it as a tensor of ones. 
+# The function then generates negative samples for the graph by iterating over the nodes and randomly changing their values, and checking if the new node value exists in the dict1 of positive samples. The function returns a tensor of negative samples, a tensor of labels for the negative samples, and a tensor of weights for the negative samples.
+
+# save_embeddings() saves the embeddings for a given graph. 
+# The input arguments include model, which is the trained embedding model, 
+# and origin, which indicates whether to use the original node embeddings. 
+# The function first sets the model to evaluation mode and initializes an empty list to store the embeddings. 
+# The function then iterates over the nodes and generates their embeddings, 
+# and concatenates them into a single array. 
+# The function saves the embeddings as numpy files for each node type, and returns the embeddings.
+
+# generate_H() generates the H matrix for a given graph. 
+# The input arguments include edge, which is a tensor of the graph structure, nums_type, 
+# which is the number of node types in the graph, and weight, which is the weight vector of the nodes. 
+# The function first determines the number of examples in the graph, 
+# and initializes a list of zeros for each node type. 
+# The function then computes the dot product of the edge tensor with its transpose 
+# and takes the square root of the result, and stores the result in the corresponding index of the H matrix. 
+# The function returns the H matrix.
+
 
 def parse_args():
     # Parses the node2vec arguments.
@@ -559,7 +607,7 @@ test_zip = np.load("../data/%s/test_data.npz" % (args.data), allow_pickle=True)
 train_data, test_data = train_zip['train_data'], test_zip['test_data']
 
 
-
+# chatgpt: Check if there are specific weights assigned to the training data, if not, assign default weights
 try:
     train_weight, test_weight = train_zip["train_weight"].astype('float32'), test_zip["test_weight"].astype('float32')
 except BaseException:
@@ -568,19 +616,21 @@ except BaseException:
     train_weight = np.ones(len(train_data), dtype='float32') * neg_num
 
 num = train_zip['nums_type']
+# chatgpt: Compute the cumulative sum of num
 num_list = np.cumsum(num)
 print("Node type num", num)
 
-
+# chatgpt: If there are multiple node types, create a mapping for each type and store it in node_type_mapping
 if len(num) > 1:
     node_type_mapping = [0, 1, 2]
     
-
+# chatgpt: If the feature type is adj, compute the initial embeddings
 if args.feature == 'adj':
     embeddings_initial = generate_embeddings(train_data, num, H=None, weight=train_weight)
 
 print(train_weight)
 print(train_weight, np.min(train_weight), np.max(train_weight))
+# chatgpt:Compute the mean of the training weights and normalize the weights by dividing by the mean and multiplying by the negative number
 train_weight_mean = np.mean(train_weight)
 train_weight = train_weight / train_weight_mean * neg_num
 test_weight = test_weight / train_weight_mean * neg_num
@@ -589,22 +639,28 @@ test_weight = test_weight / train_weight_mean * neg_num
 
 # Now for multiple node types, the first column id starts at 0, the second
 # starts at num_list[0]...
+# chatgpt:If there are multiple node types, adjust the node IDs in train_data and test_data accordingly
 if len(num) > 1:
     for i in range(len(node_type_mapping) - 1):
         train_data[:, i + 1] += num_list[node_type_mapping[i + 1] - 1]
         test_data[:, i + 1] += num_list[node_type_mapping[i + 1] - 1]
 
+# chatgpt:Convert num and num_list to torch tensors
 num = torch.as_tensor(num)
 num_list = torch.as_tensor(num_list)
 
 print("walk type", args.walk)
 # At this stage, the index still starts from zero
 
+# chatgpt:Create a list of node IDs
 node_list = np.arange(num_list[-1]).astype('int')
+# chatgpt:If the random walk type is hyperbolic, perform hyperbolic random walk, otherwise perform regular random walk
 if args.walk == 'hyper':
     walk_path = random_walk_hyper(args, node_list, train_data)
 else:
     walk_path = random_walk(args, num, train_data)
+
+# chatgpt:Delete node_list to save memory
 del node_list
 
 
@@ -618,6 +674,7 @@ test_data = add_padding_idx(test_data)
 
 # Note that, no matter how many node types are here, make sure the
 # hyperedge (N1,N2,N3,...) has id, N1 < N2 < N3...
+# chatgpt:Build a hash table for the training and testing data
 train_dict = parallel_build_hash(train_data, "build_hash", args, num, initial = set())
 test_dict = parallel_build_hash(test_data, "build_hash", args, num, initial = train_dict)
 print ("dict_size", len(train_dict), len(test_dict))
@@ -636,6 +693,9 @@ print("train data amount", len(train_data))
 if args.feature == 'walk':
     # Note that for this part, the word2vec still takes sentences with
     # words starts at "0"
+
+    ## chatgpt:Checks if word2vec file exists for the current dataset and walk, loads it if it exists
+    # Otherwise, processes the walks and performs word2vec on them
     if not args.TRY and os.path.exists(
             "../%s_wv_%d_%s.npy" %
             (args.data, args.dimensions, args.walk)):
@@ -647,30 +707,37 @@ if args.feature == 'walk':
             allow_pickle=True)
     else:
         print("start loading")
+        # Load walk file
         walks = np.loadtxt(walk_path, delimiter=" ").astype('int')
         start = time.time()
         split_num = 20
+        # Create process pool for parallel processing of walks
         pool = ProcessPoolExecutor(max_workers=split_num)
         process_list = []
+        # Split walks into equal parts
         walks = np.array_split(walks, split_num)
         
         result = []
         print("Start turning path to strs")
+        # Convert walks to list of strings for word2vec
         for walk in walks:
             process_list.append(pool.submit(walkpath2str, walk))
         
+        # Combine processed walks
         for p in as_completed(process_list):
             result += p.result()
         
         pool.shutdown(wait=True)
         
         walks = result
+        # Perform word2vec on processed walks
         print(
             "Finishing Loading and processing %.2f s" %
             (time.time() - start))
         print("Start Word2vec")
         import multiprocessing
-        
+
+        # Get number of cpu cores for parallel processing
         print("num cpu cores", multiprocessing.cpu_count())
         w2v = Word2Vec(
             walks,
@@ -685,16 +752,19 @@ if args.feature == 'walk':
         np.save("../%s_wv_%d_%s.npy" %
                 (args.data, args.dimensions, args.walk), A)
         
+        # Normalize embeddings
         from sklearn.preprocessing import StandardScaler
         
         A = StandardScaler().fit_transform(A)
-    
+
+    # Concatenate array of embeddings with a zero vector at index 0
     A = np.concatenate(
         (np.zeros((1, A.shape[-1]), dtype='float32'), A), axis=0)
     A = A.astype('float32')
     A = torch.tensor(A).to(device)
     print(A.shape)
-    
+
+    # Wrap embedding with custom embedding class
     node_embedding = Wrap_Embedding(int(
         num_list[-1] + 1), args.dimensions, scale_grad_by_freq=False, padding_idx=0, sparse=False)
     node_embedding.weight = nn.Parameter(A)
@@ -702,6 +772,7 @@ if args.feature == 'walk':
 elif args.feature == 'adj':
     flag = False
     
+    # Use multiple embeddings for different node types
     node_embedding = MultipleEmbedding(
         embeddings_initial,
         bottle_neck,
@@ -734,11 +805,14 @@ sentences = Word2Vec_Skipgram_Data_Empty()
 
 params_list = list(set(list(classifier_model.parameters()) + list(Randomwalk_Word2vec.parameters())))
 
+# This part initializes an optimizer for training the parameters. If the feature is 'adj' (adjacency matrix),
+# it uses Adam optimizer with a learning rate of 1e-3. Otherwise, it uses RMSprop optimizer with the same learning rate.
 if args.feature == 'adj':
     optimizer = torch.optim.Adam(params_list, lr=1e-3)
 else:
     optimizer = torch.optim.RMSprop(params_list, lr=1e-3)
 
+# This part filters the trainable parameters and calculates the total number of parameters to be trained.
 model_parameters = filter(lambda p: p.requires_grad, params_list)
 params = sum([np.prod(p.size()) for p in model_parameters])
 print("params to be trained", params)

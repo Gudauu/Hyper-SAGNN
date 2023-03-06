@@ -7,6 +7,14 @@ import torch.nn.functional as F
 word2vec = torch.ops.load_library(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'word2vec_ops.so'))
 warnings.filterwarnings("ignore")
 
+### Shutong: below comments are from chatGPT
+# The code seems to be for training a Word2Vec Skipgram model. 
+# The Word2Vec_Skipgram_Data class is used to initialize the training data and parameters for the Skipgram model. 
+# The build_graph method builds the computational graph for the model, including defining the inputs and outputs, 
+# defining the loss function, and defining the optimizer. 
+# The next_batch method is used to get the next batch of data for training the model. 
+# The torch.ops module is used to load a custom C++ implementation of the Word2Vec model, which is defined in the word2vec_ops.so file. The torch.nn.functional module is used to define the loss function for the model.
+
 class Word2Vec_Skipgram_Data(object):
     """Word2Vec model (Skipgram)."""
 

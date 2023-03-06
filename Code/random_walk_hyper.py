@@ -19,6 +19,59 @@ weight_degree = -0.5
 print(weight_1st, weight_degree)
 
 
+## Shutong: this file is dependent on the random_walk.py file, adding hypergraph support
+
+### Shutong: below comments are from chatGPT
+
+# The code appears to be implementing a random walk on a hypergraph 
+# using the alias method to perform non-uniform sampling. Here's a brief description of what each function is doing:
+
+# make_sparse_matrix: This function takes in raw_data, m, and n as inputs and returns a sparse matrix in 
+# Compressed Sparse Row (CSR) format. 
+# raw_data is a list of lists, where each inner list contains the indices of 
+# the nonzero elements in the corresponding row of the sparse matrix. m and n are the dimensions of the sparse matrix.
+
+# alias_setup: This function takes in a list of probabilities and returns two arrays, J and q, 
+# which are used in the alias method to perform non-uniform sampling. 
+# The function implements the algorithm described in this blog post: 
+# https://hips.seas.harvard.edu/blog/2013/03/03/the-alias-method-efficient-sampling-with-many-discrete-outcomes/.
+
+# alias_draw: This function takes in a tuple of J and q (as returned by alias_setup) 
+# and returns a random index from a non-uniform distribution.
+
+# HyperGraphRandomWalk: This class is used to perform a random walk on a hypergraph. 
+# The constructor takes in p, q, and is_weighted. p and q are parameters used to control
+#  the behavior of the random walk, and is_weighted is a boolean flag indicating 
+# whether the hypergraph is weighted or unweighted. The build_graph method takes in node_list and edge_list, 
+# which are lists representing the nodes and edges of the hypergraph, respectively. 
+# The method computes various matrices and arrays that will be used in the random walk.
+
+# get_first_order_part: This function takes in a list of nodes and returns two dictionaries, 
+# alias_n2n_1st and node2ff_1st, which are used to compute the first-order transition probabilities
+#  in the random walk. For each node in nodes, the function computes the first-order feature vector ff_1st 
+# and the corresponding normalized probabilities. The function then uses alias_setup to compute J and q for 
+# the normalized probabilities and stores the results in alias_n2n_1st. node2ff_1st maps each node to its corresponding feature vector.
+
+# get_first_order: This function computes the first-order transition probabilities for 
+# each node in the hypergraph using get_first_order_part. It then returns a dictionary alias_dict_1st, 
+# which maps each node to a tuple of alias_n2n_1st and node2ff_1st.
+
+# parallel_get_second_order: uses a ProcessPoolExecutor to parallelize the computation 
+# of the second-order alias table, which is used to generate random walks of length 2
+
+# simulate_walks_part:generates random walks of length walk_length for a set of nodes passed as an argument,
+#  and the simulate_walks_para function uses multiple processes to generate random walks of length walk_length 
+# for all nodes in the graph. 
+
+# random_walk_list: generates a single random walk of length walk_length starting
+#  from a given node using the first and second-order alias tables. 
+# 
+# toint:converts hyperedge list elements to integers. 
+# 
+# random_walk_hyper: generates hyperedge walks using the random_walk_list function and hyperedge lists.
+
+
+
 def make_sparse_matrix(raw_data, m, n):
     indptr = [len(row) for row in raw_data]
     indptr = np.cumsum([0] + indptr)

@@ -9,6 +9,7 @@ from concurrent.futures import as_completed, ProcessPoolExecutor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_ids = [0, 1]
+## Shutong: if my understanding is correct, random_walk is used to generate feature.
 
 
 class Graph():

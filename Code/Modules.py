@@ -9,6 +9,52 @@ import math
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_ids = [0, 1]
 
+### Shutong: below comments are from chatGPT
+
+# get_non_pad_mask(seq): returns a tensor of the same shape as seq with 1s where the values in seq are non-zero and 0s where they are zero.
+
+# get_attn_key_pad_mask(seq_k, seq_q): returns a mask tensor that can be used to 
+# mask out padding elements in a key-value attention mechanism. 
+# It creates a tensor of size (batch_size, seq_len_q, seq_len_k) where the values 
+# corresponding to padding elements in seq_k are set to 1 and all other values are set to 0.
+
+# Wrap_Embedding: this is a subclass of torch.nn.Embedding that simply returns 
+# the output of the parent class forward method and an additional tensor of zeros with the same device as the input.
+
+# SparseEmbedding: a module that takes an embedding weight matrix and a boolean sparse flag as input,
+#  and returns a tensor of embeddings. If sparse is True, it assumes that the embedding matrix is in sparse format 
+# and uses that directly. If sparse is False, it converts the matrix to a dense numpy array and uses that to create 
+# the embeddings. It can handle cases where the input matrix is too big to fit into GPU memory.
+
+
+# TiedAutoEncoder: a module that implements a tied autoencoder, which is a neural network that maps 
+# an input to a lower-dimensional representation and then maps that representation back to the input space. 
+# It uses tied weights and biases, meaning that the decoder weights are the transpose of the encoder weights 
+# and the biases of the encoder and decoder are different. The module takes as input the size of the input and output spaces, 
+# and creates parameters for the encoder weights, the encoder bias, and the decoder bias.
+
+
+# MultipleEmbedding: a module that takes a list of embedding weights and a dimensionality dim as input, 
+# and returns a tensor of embeddings. It creates separate tied autoencoder networks for each embedding, 
+# and applies them to the embeddings to reduce their dimensionality. 
+# It then concatenates the reduced embeddings along the last dimension to produce the final output. 
+# The module also includes dropout and layer normalization layers.
+
+# forward: This is a function of a neural network module, and it takes a tensor x as input along with some optional arguments. It first converts the input tensor to long type, creates attention masks for the input tensor, and then uses a method called get_embedding to create embeddings for the input tensor. It applies layer normalization to the embeddings and then uses a position-wise feedforward network to create an output tensor. The output tensor is then passed through a sigmoid activation function and returned. If an argument get_outlier is provided, then the function also returns the indices of the top k outliers in the output tensor.
+
+# PositionwiseFeedForward: This is a PyTorch module that implements a custom position-wise MLP. 
+# It takes a list dims as input, which specifies the sizes of the layers in the MLP. 
+# It creates multiple linear layers with tanh activation between them, and adds dropout at the end (if specified). 
+# If specified, it can also apply residual connections and layer normalization to the output.
+
+# FeedForward: This is another PyTorch module that implements a custom MLP. It takes a list dims as input, 
+# which specifies the sizes of the layers in the MLP. It creates multiple linear layers with tanh activation between them, 
+# and adds dropout at the end (if specified).
+
+# ScaledDotProductAttention: This is a PyTorch module that implements a scaled dot-product attention mechanism. 
+# It takes a temperature value as input, which is used to scale the dot product of the query and key vectors 
+# before computing the softmax. It also has a method masked_softmax that can be used to compute the softmax of a 
+# tensor while masking out certain elements.
 
 def get_non_pad_mask(seq):
     assert seq.dim() == 2

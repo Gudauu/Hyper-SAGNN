@@ -4,7 +4,29 @@ from tqdm import tqdm, trange
 from sklearn.metrics import average_precision_score, precision_score, recall_score, f1_score
 from sklearn.metrics import roc_auc_score, accuracy_score, matthews_corrcoef
 from concurrent.futures import as_completed, ProcessPoolExecutor
+### Shutong: below comments are from chatGPT
 
+# add_padding_idx(vec): This function takes a vector as input and adds a padding index to each element of the vector.
+
+# np2tensor_hyper(vec, dtype): This function takes a vector and a data type as input and converts the vector to a tensor of the specified data type.
+
+# walkpath2str(walk): This function takes a list of lists as input and converts each integer element of the inner list to a string.
+
+# roc_auc_cuda(y_true, y_pred): This function takes two vectors y_true and y_pred as input and calculates the ROC-AUC score and the average precision score.
+
+# accuracy(output, target): This function takes two vectors output and target as input and calculates the accuracy of the model.
+
+# build_hash(data): This function takes a list of lists as input and builds a hash table for each list in the input.
+
+# build_hash2(data): This function takes a list of lists as input and builds a hash table for each pair of elements in the input list.
+
+# build_hash3(data): This function takes a list of lists as input and builds a hash table for each triplet of elements in the input list.
+
+# parallel_build_hash(data, func, args, num, initial=None): This function takes a list, a function, a set of arguments, a number, and an optional dictionary as input and performs parallel processing to build a hash table.
+
+# generate_negative_edge(x, length): This function takes two inputs x and length and generates a set of negative edges.
+
+# generate_outlier(k=20): This function takes an integer as input and generates a set of potential outliers.
 
 def add_padding_idx(vec):
 	if len(vec.shape) == 1:

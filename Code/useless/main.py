@@ -1,3 +1,4 @@
+## Shutong: this main.py uses tf, while main_torch.py doesn't
 from torch.nn.utils.rnn import pad_sequence
 from torchsummary import summary
 from gensim.models import Word2Vec
